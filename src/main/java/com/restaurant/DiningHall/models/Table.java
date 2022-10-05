@@ -24,7 +24,7 @@ public class Table {
         this.id = idCounter.incrementAndGet();
     }
 
-    private int NR_OF_FOODS = 6;
+    private int NR_OF_FOODS = new Random().nextInt(6)+2;
 
     public Order generateOrder() {
         Random random = new Random();
@@ -42,7 +42,17 @@ public class Table {
                 .max(Integer::compare)
                 .orElseThrow(() -> new IllegalArgumentException("MaxWait is Negative."));
 
-        int priority = random.nextInt(5) + 1;
+        int priority;
+        if(numberOfFoods<3)
+            priority = 1;
+        else if(numberOfFoods<5)
+            priority = 2;
+        else if(numberOfFoods<7)
+            priority = 3;
+        else if(numberOfFoods<8)
+            priority = 4;
+        else priority = 5;
+
         return new Order(this.id, itemsId, priority, maxWait * 1.3, Instant.now().toEpochMilli());
     }
 

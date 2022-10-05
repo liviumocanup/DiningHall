@@ -94,7 +94,7 @@ public class DiningHallService {
 
     private void bringFinishedOrderToTable(FinishedOrder finishedOrder) {
         tables.get(finishedOrder.getTableId() - 1).verifyOrderRectitude(finishedOrder).setState(State.FREE);
-        //orderRatingService.rateOrderBasedOnThePreparationTime(finishedOrder);
+        orderRatingService.rateOrderBasedOnThePreparationTime(finishedOrder);
     }
 
     private void initWaiters() {
