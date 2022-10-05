@@ -1,31 +1,27 @@
 package com.restaurant.DiningHall.models;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.restaurant.DiningHall.constants.CookingApparatus;
+import lombok.Getter;
+import lombok.ToString;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Getter
+@ToString
 public class Food {
     @JsonAlias("id")
-    private Long id;
+    private int id;
 
     @JsonAlias("name")
     private String name;
 
     @JsonAlias("preparation-time")
-    private Long preparation_time;
+    private long preparationTime;
 
     @JsonAlias("complexity")
     private int complexity;
 
     @JsonAlias("cooking-apparatus")
-    private String cookingApparatus;
-
-    public Long getId() {
-        return id;
-    }
+    private CookingApparatus cookingApparatus;
 
 
-    public Long getPreparation_time() {
-        return preparation_time;
-    }
 }

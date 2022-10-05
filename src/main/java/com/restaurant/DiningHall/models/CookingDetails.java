@@ -1,28 +1,24 @@
 package com.restaurant.DiningHall.models;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import lombok.*;
 
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class CookingDetails {
-    private List<CookingDetail> cookingDetailList;
+    @JsonAlias("food_id")
+    private int foodId;
 
-    public List<CookingDetail> getCookingDetailList() {
-        return cookingDetailList;
-    }
+    @JsonAlias("cook_id")
+    private int cookId;
 
-    public void addCookingDetail(CookingDetail cookingDetail) {
-        this.cookingDetailList.add(cookingDetail);
-    }
-
-    public CookingDetails(List<CookingDetail> cookingDetailList) {
-        this.cookingDetailList = cookingDetailList;
-    }
-
-    public CookingDetails() {
-        this.cookingDetailList = new ArrayList<>();
-    }
-
-    public CookingDetail[] toArray() {
-        return getCookingDetailList().toArray(new CookingDetail[0]);
+    @Override
+    public String toString() {
+        return "CookingDetails{" +
+                "foodId=" + foodId +
+                ", cookId=" + cookId +
+                '}';
     }
 }

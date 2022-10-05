@@ -1,93 +1,52 @@
 package com.restaurant.DiningHall.models;
 
-import java.util.Arrays;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.*;
 
+import java.time.Instant;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString
 public class Order {
-    //Has to be unique so something like final?
-    private Long order_id;
-    private Long table_id;
-    private Long waiter_id;
-    private Long[] items;
+    @JsonAlias("order_id")
+    private int orderId;
+
+    @JsonAlias("table_id")
+    private int tableId;
+
+    @JsonAlias("waiter_id")
+    private int waiterId;
+
+    @JsonAlias("items")
+    private List<Integer> items;
+
+    @JsonAlias("priority")
     private int priority;
-    private Double max_wait;
-    private Long pick_up_time;
 
-    public Long getOrder_id() {
-        return order_id;
-    }
+    @JsonAlias("max_wait")
+    private double maxWait;
 
-    public void setOrder_id(Long order_id) {
-        this.order_id = order_id;
-    }
+    @JsonAlias("pick_up_time")
+    private long pickUpTime;
 
-    public Long getTable_id() {
-        return table_id;
-    }
+    @JsonIgnore
+    private Instant receivedAt;
 
-    public void setTable_id(Long table_id) {
-        this.table_id = table_id;
-    }
+    @JsonIgnore
+    private static AtomicInteger idCounter = new AtomicInteger();
 
-    public Long getWaiter_id() {
-        return waiter_id;
-    }
-
-    public void setWaiter_id(Long waiter_id) {
-        this.waiter_id = waiter_id;
-    }
-
-    public Long[] getItems() {
-        return items;
-    }
-
-    public void setItems(Long[] items) {
-        this.items = items;
-    }
-
-    public int getPriority() {
-        return priority;
-    }
-
-    public void setPriority(int priority) {
-        this.priority = priority;
-    }
-
-    public Double getMax_wait() {
-        return max_wait;
-    }
-
-    public void setMax_wait(Double max_wait) {
-        this.max_wait = max_wait;
-    }
-
-    public Long getPick_up_time() {
-        return pick_up_time;
-    }
-
-    public void setPick_up_time(Long pick_up_time) {
-        this.pick_up_time = pick_up_time;
-    }
-
-    @Override
-    public String toString() {
-        return "Order{" +
-                "order_id=" + order_id +
-                ", table_id=" + table_id +
-                ", waiter_id=" + waiter_id +
-                ", items=" + Arrays.toString(items) +
-                ", priority=" + priority +
-                ", max_wait=" + max_wait +
-                ", pick_up_time=" + pick_up_time +
-                '}';
-    }
-
-    public Order(Long id, Long table_id, Long waiterId, Long[] items, int priority, Double maxWait, Long pickUpTime) {
-        this.order_id = id;
-        this.table_id = table_id;
-        this.waiter_id = waiterId;
+    public Order(int tableId, List<Integer> items, int priority, Double maxWait, long pickUpTime) {
+        this.orderId = idCounter.incrementAndGet();
+        this.tableId = tableId;
         this.items = items;
         this.priority = priority;
-        this.max_wait = maxWait;
-        this.pick_up_time = pickUpTime;
+        this.maxWait = maxWait;
+        this.pickUpTime = pickUpTime;
     }
 }
