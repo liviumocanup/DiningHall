@@ -10,9 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
-@ToString
 public class Order {
     @JsonAlias("order_id")
     private int orderId;
@@ -36,9 +34,6 @@ public class Order {
     private long pickUpTime;
 
     @JsonIgnore
-    private Instant receivedAt;
-
-    @JsonIgnore
     private static AtomicInteger idCounter = new AtomicInteger();
 
     public Order(int tableId, List<Integer> items, int priority, Double maxWait, long pickUpTime) {
@@ -48,5 +43,18 @@ public class Order {
         this.priority = priority;
         this.maxWait = maxWait;
         this.pickUpTime = pickUpTime;
+    }
+
+    @Override
+    public String toString() {
+        return "Order{" +
+                "orderId=" + orderId +
+                ", tableId=" + tableId +
+                ", waiterId=" + waiterId +
+                ", items=" + items +
+                ", priority=" + priority +
+                ", maxWait=" + maxWait +
+                ", pickUpTime=" + pickUpTime +
+                '}';
     }
 }

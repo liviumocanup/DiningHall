@@ -38,6 +38,4 @@ public class FinishedOrder {
 
     @JsonAlias("cooking_details")
     private List<CookingDetails> cookingDetails;
-
-
 }

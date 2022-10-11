@@ -22,6 +22,4 @@ public class Food {
 
     @JsonAlias("cooking-apparatus")
     private CookingApparatus cookingApparatus;
-
-
 }

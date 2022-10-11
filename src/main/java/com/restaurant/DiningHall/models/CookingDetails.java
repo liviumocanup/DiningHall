@@ -5,8 +5,6 @@ import lombok.*;
 
 @Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
 public class CookingDetails {
     @JsonAlias("food_id")
     private int foodId;

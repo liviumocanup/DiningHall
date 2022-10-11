@@ -38,12 +38,13 @@ public class DiningHallService {
     private int waiterIdCounter = 1;
     private final OrderRatingService orderRatingService;
 
-    public static final int TIME_UNIT = 1000;
+    public static final int TIME_UNIT = 50;
 
     public DiningHallService(OrderRatingService orderRatingService) {
         initWaiters();
         initTables();
         this.orderRatingService = orderRatingService;
+        tableReadyToMakeNewOrder();
     }
 
     @Scheduled(fixedRate = (long) (0.5*TIME_UNIT))
