@@ -20,7 +20,7 @@ public class DiningHallController {
     @PostMapping
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void receiveFinishedOrder(@RequestBody FinishedOrder finishedOrder) {
-        log.info("<-- Received " + finishedOrder.toString());
+        //log.info("<-- Received " + finishedOrder.toString());
         service.receiveFinishedOrder(finishedOrder);
     }
 }
