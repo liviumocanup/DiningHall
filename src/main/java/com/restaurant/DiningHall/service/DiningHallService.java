@@ -9,14 +9,15 @@ import com.restaurant.DiningHall.models.Order;
 import com.restaurant.DiningHall.models.Table;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,26 +38,35 @@ public class DiningHallService {
     private final Map<Integer, ExecutorService> waiters = new HashMap<>();
     private int waiterIdCounter = 1;
     private final OrderRatingService orderRatingService;
+    private final ClientOrderService clientOrderService;
 
     public static final int TIME_UNIT = 50;
 
-    public DiningHallService(OrderRatingService orderRatingService) {
+    public static String KITCHEN_SERVICE_URL;
+
+    @Value("${kitchen.service.url}")
+    public void setDinningHallServiceUrl(String url){
+        KITCHEN_SERVICE_URL = url;
+    }
+
+    public DiningHallService(OrderRatingService orderRatingService, ClientOrderService clientOrderService) {
         initWaiters();
         initTables();
         this.orderRatingService = orderRatingService;
-        tableReadyToMakeNewOrder();
+        this.clientOrderService = clientOrderService;
+        //tableReadyToMakeNewOrder();
     }
 
-    @Scheduled(fixedRate = (long) (0.5*TIME_UNIT))
-    public void tableReadyToMakeNewOrder() {
-        tables.stream()
-                .filter(table -> table.getState().equals(State.FREE))
-                .findAny()
-                .ifPresent(table -> {
-                    table.setState(State.WAITING_TO_ORDER);
-                    chooseWaiterForTable(table);
-                });
-    }
+//    @Scheduled(fixedRate = (long) (0.5*TIME_UNIT))
+//    public void tableReadyToMakeNewOrder() {
+//        tables.stream()
+//                .filter(table -> table.getState().equals(State.FREE))
+//                .findAny()
+//                .ifPresent(table -> {
+//                    table.setState(State.WAITING_TO_ORDER);
+//                    chooseWaiterForTable(table);
+//                });
+//    }
 
     private void chooseWaiterForTable(Table table) {
         Map.Entry<Integer, ExecutorService> waitersEntry = waiters.entrySet().stream()
@@ -81,17 +91,26 @@ public class DiningHallService {
         order.setWaiterId(waiterId);
         table.setLastOrder(order);
 
-        ResponseEntity<Void> orderResponse = restTemplate.postForEntity("http://localhost:8081/order", order, Void.class);
+        ResponseEntity<Void> orderResponse = restTemplate.postForEntity(KITCHEN_SERVICE_URL, order, Void.class);
         if (orderResponse.getStatusCode().equals(HttpStatus.ACCEPTED)) {
-            log.info("--> " + order + " was sent successfully.");
+            //log.info("--> " + order + " was sent successfully.");
         } else {
-            log.warn("<!!!!!> " + order + " was unsuccessful.");
+            //log.warn("<!!!!!> " + order + " was unsuccessful.");
         }
     }
 
     public void receiveFinishedOrder(FinishedOrder finishedOrder) {
-        waiters.get(finishedOrder.getWaiterId()).execute(() -> bringFinishedOrderToTable(finishedOrder));
+        finishedOrder.setServingTime(Instant.now());
+
+        if (finishedOrder.getWaiterId() == 0) {
+            clientOrderService.receiveExternalOrder(finishedOrder);
+        } else {
+            System.out.println(finishedOrder);
+            waiters.get(finishedOrder.getWaiterId()).execute(() -> bringFinishedOrderToTable(finishedOrder));
+        }
     }
+
+
 
     private void bringFinishedOrderToTable(FinishedOrder finishedOrder) {
         tables.get(finishedOrder.getTableId() - 1).verifyOrderRectitude(finishedOrder).setState(State.FREE);

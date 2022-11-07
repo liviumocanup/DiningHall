@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -56,5 +55,10 @@ public class Order {
                 ", maxWait=" + maxWait +
                 ", pickUpTime=" + pickUpTime +
                 '}';
+    }
+
+    public Order(List<Integer> items){
+        this.orderId = idCounter.incrementAndGet();
+        this.items = items;
     }
 }

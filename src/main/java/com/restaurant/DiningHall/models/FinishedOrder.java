@@ -1,10 +1,12 @@
 package com.restaurant.DiningHall.models;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,7 +21,7 @@ public class FinishedOrder {
     private int tableId;
 
     @JsonAlias("waiter_id")
-    private int waiterId;
+    private Integer waiterId;
 
     @JsonAlias("items")
     private List<Integer> items = new ArrayList<>();
@@ -38,4 +40,7 @@ public class FinishedOrder {
 
     @JsonAlias("cooking_details")
     private List<CookingDetails> cookingDetails;
+
+    @JsonIgnore
+    private Instant servingTime;
 }

@@ -4,22 +4,29 @@ import com.restaurant.DiningHall.models.FinishedOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static com.restaurant.DiningHall.service.DiningHallService.TIME_UNIT;
 
 @Service
 @Slf4j
 public class OrderRatingService {
 
-    private AtomicLong totalRating = new AtomicLong();
-    private AtomicLong numberOfOrdersServed = new AtomicLong();
+    private static final AtomicLong totalRating = new AtomicLong();
+    private static final AtomicInteger numberOfOrdersServed = new AtomicInteger();
+    public static double average = 0d;
 
-    public void rateOrderBasedOnThePreparationTime(FinishedOrder finishedOrder){
+    public static void rateOrderBasedOnThePreparationTime(FinishedOrder finishedOrder){
 
+        rateOrderBasedOnThePreparationTime(finishedOrder.getMaxWait(), finishedOrder.getServingTime().toEpochMilli(), finishedOrder.getPickUpTime());
+    }
+
+    public static void rateOrderBasedOnThePreparationTime(double maxWaitTime, Long servingTime, Long pickUpTime){
         int rating;
-        long prepTime = Instant.now().toEpochMilli() - finishedOrder.getPickUpTime();
-        double maxWaitTime = finishedOrder.getMaxWait() * 1000;
-        if(Instant.now().toEpochMilli() - finishedOrder.getPickUpTime() < finishedOrder.getMaxWait()){
+        long prepTime = servingTime - pickUpTime;
+        maxWaitTime = maxWaitTime * TIME_UNIT;
+        if(prepTime < maxWaitTime){
             rating = 5;
         } else if (prepTime < maxWaitTime * 1.1){
             rating = 4;
@@ -32,7 +39,11 @@ public class OrderRatingService {
         } else {
             rating = 0;
         }
-        double avg = totalRating.addAndGet(rating)/(double) numberOfOrdersServed.incrementAndGet();
-        log.info("Average restaurant rating is :"+avg);
+        average = totalRating.addAndGet(rating) / (double) numberOfOrdersServed.incrementAndGet();
+        log.info("Average restaurant rating is :" + average);
     }
+
+//    public static SubOrderRatingResponse submitExternalRating(SubOrderRatingRequest subOrderRatingRequest) {
+//        return subOrderRatingResponse;
+//    }
 }
