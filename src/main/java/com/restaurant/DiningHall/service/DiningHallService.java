@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
@@ -32,7 +33,7 @@ public class DiningHallService {
     private static final Integer NUMBER_OF_WAITERS = 5;
 
     private final static RestTemplate restTemplate = new RestTemplate();
-    public static final List<Food> foodList = loadDefaultMenu();
+    public static final List<Food> foodList = new ArrayList<>();
 
     private static final List<Table> tables = new ArrayList<>();
     private final Map<Integer, ExecutorService> waiters = new HashMap<>();
@@ -47,6 +48,15 @@ public class DiningHallService {
     @Value("${kitchen.service.url}")
     public void setDinningHallServiceUrl(String url){
         KITCHEN_SERVICE_URL = url;
+    }
+
+    @Value("${restaurant.menu}")
+    public String restaurantMenu;
+
+    @PostConstruct
+    public void loadMenu() {
+        System.out.println(restaurantMenu);
+        loadDefaultMenu();
     }
 
     public DiningHallService(OrderRatingService orderRatingService, ClientOrderService clientOrderService) {
@@ -129,12 +139,12 @@ public class DiningHallService {
         }
     }
 
-    private static List<Food> loadDefaultMenu() {
+    private void loadDefaultMenu() {
         ObjectMapper mapper = new ObjectMapper();
-        InputStream is = DiningHallService.class.getResourceAsStream("/menu-items.json");
+        InputStream is = DiningHallService.class.getResourceAsStream("/"+ restaurantMenu);
         try {
-            return mapper.readValue(is, new TypeReference<>() {
-            });
+            List<Food> f =  mapper.readValue(is, new TypeReference<>() {});
+            foodList.addAll(f);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
