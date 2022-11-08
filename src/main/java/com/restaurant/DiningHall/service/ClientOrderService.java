@@ -1,5 +1,7 @@
 package com.restaurant.DiningHall.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.restaurant.DiningHall.models.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,8 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -22,6 +27,9 @@ public class ClientOrderService {
     private static final String FOOD_SERVICE_REGISTRATION_URL = "/register";
 
     private static final String CHECK_ORDER_URL = "/order/";
+
+    private static List<Food> menuItems;
+
     @Value("${food-ordering-service.url}")
     private String foodOrderServiceUrl;
 
@@ -37,14 +45,29 @@ public class ClientOrderService {
     @Value("${kitchen.service.url}")
     private String kitchenServiceUrl;
 
+    @Value("${restaurant.menu}")
+    public String restaurantMenu;
+
     @PostConstruct
+    public void initMenuItems() {
+        ObjectMapper mapper = new ObjectMapper();
+        InputStream is = DiningHallService.class.getResourceAsStream("/"+restaurantMenu);
+        try {
+            menuItems =  mapper.readValue(is, new TypeReference<List<Food>>() {
+            });
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        registerRestaurant();
+    }
+
     public void registerRestaurant(){
         if(foodOrderServiceUrl != null) {
             Restaurant restaurant = new Restaurant();
             restaurant.setRestaurantId(restaurantId);
             restaurant.setAddress(restaurantAddress);
-            restaurant.setMenu(DiningHallService.foodList);
-            restaurant.setMenuItems(DiningHallService.foodList.size());
+            restaurant.setMenu(menuItems);
+            restaurant.setMenuItems(menuItems.size());
             restaurant.setRating(OrderRatingService.average);
             restaurant.setName(restaurantName);
             restTemplate.postForEntity(foodOrderServiceUrl + FOOD_SERVICE_REGISTRATION_URL, restaurant, Void.class);
@@ -81,27 +104,32 @@ public class ClientOrderService {
         return clientSubOrderResponse;
     }
 
-    public void receiveExternalOrder(FinishedOrder finishedOrder) {
+    public synchronized void receiveExternalOrder(FinishedOrder finishedOrder) {
         log.info("---> Received client order from Kitchen: "+finishedOrder+" finishedOrdersMap : "+finishedOrders);
         if(finishedOrder != null) {
             FinishedClientOrder finishedClientOrder = finishedOrders.get(finishedOrder.getOrderId());
-            finishedClientOrder.setCookingTime(finishedOrder.getCookingTime());
-            finishedClientOrder.setPreparedTime(Instant.now().toEpochMilli());
-            finishedClientOrder.setCookingDetails(finishedOrder.getCookingDetails());
-            finishedClientOrder.setMaximumWaitTime(finishedOrder.getMaxWait());
-            finishedClientOrder.setEstimatedWaitingTime(null);
-            finishedClientOrder.setIsReady(true);
+            if(finishedClientOrder != null){
+                finishedClientOrder.setCookingTime(finishedOrder.getCookingTime());
+                finishedClientOrder.setPreparedTime(Instant.now().toEpochMilli());
+                finishedClientOrder.setCookingDetails(finishedOrder.getCookingDetails());
+                finishedClientOrder.setMaximumWaitTime(finishedOrder.getMaxWait());
+                finishedClientOrder.setEstimatedWaitingTime(null);
+                finishedClientOrder.setIsReady(true);
+            }
         }
     }
 
     public FinishedClientOrder checkIfOrderIsReady(Integer id) {
         //log.info("Requesting status for finished order with id : "+id);
         FinishedClientOrder finishedClientOrder = finishedOrders.get(id);
-        if (finishedClientOrder != null && finishedClientOrder.getIsReady()) {
-            //log.info("Removing finished order with id : "+id);
-            finishedOrders.remove(id);
-        } else {
-            finishedClientOrder.setEstimatedWaitingTime(getEstimatedCookingTimeFromKitchen(id));
+        //System.out.println("finishedOrders: "+ finishedOrders);
+        if(finishedClientOrder != null){
+            if (finishedClientOrder.getIsReady()) {
+                //log.info("Removing finished order with id : "+id);
+                finishedOrders.remove(id);
+            } else {
+                finishedClientOrder.setEstimatedWaitingTime(getEstimatedCookingTimeFromKitchen(id));
+            }
         }
 
         //log.info("Returning order status : "+ finishedClientOrder);
