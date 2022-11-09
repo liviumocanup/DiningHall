@@ -51,9 +51,9 @@ public class ClientOrderService {
     @PostConstruct
     public void initMenuItems() {
         ObjectMapper mapper = new ObjectMapper();
-        InputStream is = DiningHallService.class.getResourceAsStream("/"+restaurantMenu);
+        InputStream is = DiningHallService.class.getResourceAsStream("/" + restaurantMenu);
         try {
-            menuItems =  mapper.readValue(is, new TypeReference<List<Food>>() {
+            menuItems = mapper.readValue(is, new TypeReference<List<Food>>() {
             });
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -61,8 +61,8 @@ public class ClientOrderService {
         registerRestaurant();
     }
 
-    public void registerRestaurant(){
-        if(foodOrderServiceUrl != null) {
+    public void registerRestaurant() {
+        if (foodOrderServiceUrl != null) {
             Restaurant restaurant = new Restaurant();
             restaurant.setRestaurantId(restaurantId);
             restaurant.setAddress(restaurantAddress);
@@ -78,13 +78,15 @@ public class ClientOrderService {
         Order order = new Order(clientSubOrderRequest.getItems());
         order.setMaxWait(clientSubOrderRequest.getMaximumWaitTime());
         order.setPickUpTime(Instant.now().toEpochMilli());
-        log.info("<--- Sending new order to kitchen : "+order);
+        order.setPriority(clientSubOrderRequest.getPriority());
+        log.info("<--- Sending new order to kitchen : " + order);
         Long registeredTime = Instant.now().toEpochMilli();
 
         FinishedClientOrder finishedClientOrder = new FinishedClientOrder();
         finishedClientOrder.setOrderId(order.getOrderId());
         finishedClientOrder.setRegisteredTime(registeredTime);
         finishedClientOrder.setCreatedTime(clientSubOrderRequest.getCreatedTime());
+        finishedClientOrder.setPriority(order.getPriority());
         finishedOrders.put(order.getOrderId(), finishedClientOrder);
 
         restTemplate.postForEntity(kitchenServiceUrl + "/order", order, Void.class);
@@ -105,16 +107,17 @@ public class ClientOrderService {
     }
 
     public synchronized void receiveExternalOrder(FinishedOrder finishedOrder) {
-        log.info("---> Received client order from Kitchen: "+finishedOrder+" finishedOrdersMap : "+finishedOrders);
-        if(finishedOrder != null) {
+        log.info("---> Received client order from Kitchen: " + finishedOrder);
+        if (finishedOrder != null) {
             FinishedClientOrder finishedClientOrder = finishedOrders.get(finishedOrder.getOrderId());
-            if(finishedClientOrder != null){
+            if (finishedClientOrder != null) {
                 finishedClientOrder.setCookingTime(finishedOrder.getCookingTime());
                 finishedClientOrder.setPreparedTime(Instant.now().toEpochMilli());
                 finishedClientOrder.setCookingDetails(finishedOrder.getCookingDetails());
                 finishedClientOrder.setMaximumWaitTime(finishedOrder.getMaxWait());
                 finishedClientOrder.setEstimatedWaitingTime(null);
                 finishedClientOrder.setIsReady(true);
+                OrderRatingService.rateOrderBasedOnThePreparationTime(finishedOrder, restaurantName);
             }
         }
     }
@@ -123,7 +126,7 @@ public class ClientOrderService {
         //log.info("Requesting status for finished order with id : "+id);
         FinishedClientOrder finishedClientOrder = finishedOrders.get(id);
         //System.out.println("finishedOrders: "+ finishedOrders);
-        if(finishedClientOrder != null){
+        if (finishedClientOrder != null) {
             if (finishedClientOrder.getIsReady()) {
                 //log.info("Removing finished order with id : "+id);
                 finishedOrders.remove(id);
