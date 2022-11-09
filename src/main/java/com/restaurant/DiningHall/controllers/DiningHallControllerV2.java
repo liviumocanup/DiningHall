@@ -15,16 +15,17 @@ public class DiningHallControllerV2 {
     }
 
     @GetMapping("/order/{id}")
-    public FinishedClientOrder checkIfOrderIsReady(@PathVariable Integer id){
+    public FinishedClientOrder checkIfOrderIsReady(@PathVariable Integer id) {
         return clientOrderService.checkIfOrderIsReady(id);
     }
 
     @PostMapping("/order")
-    public ClientSubOrderResponse submitExternalOrder(@RequestBody ClientSubOrderRequest clientSubOrderRequest){
+    public ClientSubOrderResponse submitExternalOrder(@RequestBody ClientSubOrderRequest clientSubOrderRequest) {
         return clientOrderService.sendClientOrderToKitchen(clientSubOrderRequest);
     }
 
-//    @PostMapping("/rating")
-//    public ClientSubOrderRatingRequest submitRating(@RequestBody ClientSubOrderRatingRequest subOrderRatingRequest ){
-//    }
+    @PostMapping("/rating")
+    public ClientSubOrderRatingResponse submitRating(@RequestBody ClientSubOrderRatingRequest subOrderRatingRequest) {
+        return OrderRatingService.submitExternalRating(subOrderRatingRequest);
+    }
 }

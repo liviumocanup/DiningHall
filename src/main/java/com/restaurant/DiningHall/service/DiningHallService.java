@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -19,7 +20,12 @@ import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -29,8 +35,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Getter
 public class DiningHallService {
 
-    private static final Integer NUMBER_OF_TABLES = 10;
-    private static final Integer NUMBER_OF_WAITERS = 5;
+    private static final Integer NUMBER_OF_TABLES = 6;
+    private static final Integer NUMBER_OF_WAITERS = 3;
 
     private final static RestTemplate restTemplate = new RestTemplate();
     public static final List<Food> foodList = new ArrayList<>();
@@ -46,7 +52,7 @@ public class DiningHallService {
     public static String KITCHEN_SERVICE_URL;
 
     @Value("${kitchen.service.url}")
-    public void setDinningHallServiceUrl(String url){
+    public void setDinningHallServiceUrl(String url) {
         KITCHEN_SERVICE_URL = url;
     }
 
@@ -64,19 +70,19 @@ public class DiningHallService {
         initTables();
         this.orderRatingService = orderRatingService;
         this.clientOrderService = clientOrderService;
-        //tableReadyToMakeNewOrder();
+        tableReadyToMakeNewOrder();
     }
 
-//    @Scheduled(fixedRate = (long) (0.5*TIME_UNIT))
-//    public void tableReadyToMakeNewOrder() {
-//        tables.stream()
-//                .filter(table -> table.getState().equals(State.FREE))
-//                .findAny()
-//                .ifPresent(table -> {
-//                    table.setState(State.WAITING_TO_ORDER);
-//                    chooseWaiterForTable(table);
-//                });
-//    }
+    @Scheduled(fixedRate = (long) (TIME_UNIT*1.5))
+    public void tableReadyToMakeNewOrder() {
+        tables.stream()
+                .filter(table -> table.getState().equals(State.FREE))
+                .findAny()
+                .ifPresent(table -> {
+                    table.setState(State.WAITING_TO_ORDER);
+                    chooseWaiterForTable(table);
+                });
+    }
 
     private void chooseWaiterForTable(Table table) {
         Map.Entry<Integer, ExecutorService> waitersEntry = waiters.entrySet().stream()
@@ -91,7 +97,7 @@ public class DiningHallService {
 
     private void takeOrder(int waiterId, Table table) {
         try {
-            Thread.sleep(new Random().nextInt(3)+2 * TIME_UNIT);
+            Thread.sleep(new Random().nextInt(3) + 2 * TIME_UNIT);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -101,11 +107,11 @@ public class DiningHallService {
         order.setWaiterId(waiterId);
         table.setLastOrder(order);
 
-        ResponseEntity<Void> orderResponse = restTemplate.postForEntity(KITCHEN_SERVICE_URL, order, Void.class);
+        ResponseEntity<Void> orderResponse = restTemplate.postForEntity(KITCHEN_SERVICE_URL + "/order", order, Void.class);
         if (orderResponse.getStatusCode().equals(HttpStatus.ACCEPTED)) {
-            //log.info("--> " + order + " was sent successfully.");
+            log.info("!<! " + order + " was sent successfully.");
         } else {
-            //log.warn("<!!!!!> " + order + " was unsuccessful.");
+            log.warn("<!!!!!> " + order + " was unsuccessful.");
         }
     }
 
@@ -115,16 +121,15 @@ public class DiningHallService {
         if (finishedOrder.getWaiterId() == 0) {
             clientOrderService.receiveExternalOrder(finishedOrder);
         } else {
-            System.out.println(finishedOrder);
+            log.info("!>! " + finishedOrder + " was received successfully.");
             waiters.get(finishedOrder.getWaiterId()).execute(() -> bringFinishedOrderToTable(finishedOrder));
         }
     }
 
-
-
     private void bringFinishedOrderToTable(FinishedOrder finishedOrder) {
         tables.get(finishedOrder.getTableId() - 1).verifyOrderRectitude(finishedOrder).setState(State.FREE);
-        orderRatingService.rateOrderBasedOnThePreparationTime(finishedOrder);
+        finishedOrder.setMaxWait(finishedOrder.getMaxWait()*TIME_UNIT);
+        OrderRatingService.rateOrderBasedOnThePreparationTime(finishedOrder, null);
     }
 
     private void initWaiters() {
@@ -141,9 +146,10 @@ public class DiningHallService {
 
     private void loadDefaultMenu() {
         ObjectMapper mapper = new ObjectMapper();
-        InputStream is = DiningHallService.class.getResourceAsStream("/"+ restaurantMenu);
+        InputStream is = DiningHallService.class.getResourceAsStream("/" + restaurantMenu);
         try {
-            List<Food> f =  mapper.readValue(is, new TypeReference<>() {});
+            List<Food> f = mapper.readValue(is, new TypeReference<>() {
+            });
             foodList.addAll(f);
         } catch (IOException e) {
             throw new RuntimeException(e);
